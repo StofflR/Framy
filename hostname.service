@@ -1,0 +1,14 @@
+[Unit]
+Description=HOSTNAME Service Script
+
+After=multi-user.target
+
+[Service]
+Type=simple
+ExecStart=BOOTABLE_SH
+Restart=on-failure
+RestartSec=10
+KillMode=process
+
+[Install]
+WantedBy=multi-user.target

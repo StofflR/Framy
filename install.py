@@ -10,7 +10,7 @@ from os import getcwd, path
 
 # Default values
 DELAY = 5
-HOSTNAME = "CatroZero"
+HOSTNAME = "framy"
 WIFI_PATH = path.join(getcwd(), "wifi")
 BLUETOOTH_PATH = path.join(getcwd(), "bluetooth")
 MOUNT_FILE = "/mnt/piusb"
@@ -36,6 +36,7 @@ parser.add_argument("--mount-file", type=str, default=MOUNT_FILE, help="Mount fi
 parser.add_argument("--data-file", type=str, default=DATA_FILE, help="Data file path")
 parser.add_argument("--usb-size", type=str, default=USB_SIZE, help="USB size e.g. 8.0G or 8M")
 parser.add_argument("--venv", type=str, default=VENV_PATH, help="Path to python virtual environment bin folder e.g. .venv/bin")
+parser.add_argument("--update", type=bool, default=False, help="Update system packages")
 
 # Parse arguments
 args = parser.parse_args()
@@ -97,6 +98,10 @@ else:
     print("Python is not running in a virtual environment.")
     exit(1)
 
+if(args.update):
+    run_command([["apt", "update", "-y"], ["apt", "upgrade", "-y"]], "Updating system")
+
+
 mkdir(BLUETOOTH_PATH) if not path.exists(BLUETOOTH_PATH) else print("Bluetooth path already exists")
 mkdir(WIFI_PATH) if not path.exists(WIFI_PATH) else print("WiFi path already exists")
     
@@ -127,9 +132,11 @@ def run_command(commands, display):
 run_command([["fallocate", "-l", USB_SIZE, DATA_FILE]], "Creating shared usb file")
 run_command([["mkfs.vfat", "-F32", DATA_FILE]], "Formating shared usb file")
 
+run_command([["raspi-config", "nonint", "do_i2c", "0"]], "Enable i2c")
+run_command([["raspi-config", "nonint", "do_spi", "0"]], "Enable spi")
 
 config_file = "/boot/config.txt" if not path.exists("/boot/firmware/config.txt") else "/boot/firmware/config.txt"
-dtoverlay_line = "dtoverlay=dwc2"
+dtoverlay_line = "dtoverlay=spi0-0cs,dwc2"
 
 # Check if "dtoverlay=dwc2" is already enabled in /boot/config.txt
 print("Already enabled dwc2 config") if dtoverlay_line in open(config_file).read() else open(config_file, "a").write(dtoverlay_line + "\n")
@@ -141,7 +148,7 @@ print("Already enabled dwc2 module") if "dwc2" in open("/etc/modules").read() el
 print("Already enabled g_mass_storage") if "g_mass_storage" in open("/etc/modules").read() else open("/etc/modules", "a").write("g_mass_storage\n")
 
 run_command([["apt-get", "install", "samba", "screen", "-y"],
-             ["apt-get", "install", "libbluetooth3", "python3-dev", "libdbus-1-dev", "libc6", "libwrap0", "pulseaudio-module-bluetooth", "libglib2.0-dev", "libcairo2-dev", "libgirepository1.0-dev", "-y"],
+             ["apt-get", "install", "libbluetooth3", "python3-dev", "python3-numpy", "libblas-dev", "libopenblas-dev", "libdbus-1-dev", "libc6", "libwrap0", "pulseaudio-module-bluetooth", "libglib2.0-dev", "libcairo2-dev", "libgirepository1.0-dev", "-y"],
              ["apt-get", "install", "libopenobex2", "obexpushd", "-y"]], "Installing dependencies")
 
 # Check if libopenobex2 is already installed 
@@ -157,8 +164,7 @@ if subprocess.run(["dpkg", "-s", "libopenobex2"], capture_output=True).returncod
     remove(f"{OBEX_FILE}")
 
 subprocess.run(["apt-get", "install", "--fix-broken", "-y"])
-subprocess.run([PYTHON, "-m" ,"pip", "install", "watchdog", "dbus-python", "PyGObject"])
-
+subprocess.run([PYTHON, "-m" ,"pip", "install", "watchdog", "dbus-python", "PyGObject", "RPi.GPIO", "spidev", "inky", "git+https://www.github.com/hbldh/hitherdither"])
 
 makedirs(MOUNT_FILE, mode=0o2777, exist_ok=True)
 run_command([["mount", DATA_FILE, MOUNT_FILE]], "Mounting USB Storage to shared folder")
@@ -212,6 +218,12 @@ def set_compat(path, target):
 set_compat("/etc/systemd/system/dbus-org.bluez.service", "bluez")
 set_compat("/etc/systemd/system/bluetooth.target.wants/bluetooth.service", "target.wants.bluetooth")
 set_compat("/lib/systemd/system/bluetooth.service", "system/bluetooth")
+
+run_command([["apt-get", "install", "cmake", "libopencv-dev", "libomp-dev, "-y"]], "Installing dithering components")
+
+# generate dithering executable
+subprocess.run(["cmake", "-DCMAKE_BUILD_TYPE=Release", "."])
+subprocess.run(["make"])
 
 
 # Read the contents of the boot_config.txt file

@@ -24,6 +24,7 @@ class FileModified():
                 self.operations.append(fileop)
         else:
             os.system(fileop)
+            print(fileop + " executed!")
 
 class Handler(FileSystemEventHandler):
     def __init__(self, source: str, target: str, actionLock: threading.Lock, changed:FileModified, addTimeTag=False, largeFileLock=None):
@@ -80,7 +81,9 @@ class Handler(FileSystemEventHandler):
                         file = file + "." + splitName[1]
                     
                 target = self.target + file
-                if self.changed:
+                if self.changed and self.addTimeTag:
+                    self.changed.modify("mv "+shlex.quote(event.src_path)+" "+ shlex.quote(target))
+                elif self.changed:
                     self.changed.modify("cp "+shlex.quote(event.src_path)+" "+ shlex.quote(target))
                 self.fsLock.release()
             elif event.event_type == 'deleted':

@@ -88,7 +88,7 @@ def updateImage(img):
             exit(0)
         elif args.device == Device.Inky or args.device == DEVICES[-1]:
             try:
-                from .inky_uc8159 import Inky as InkyUC8159  # noqa: F401
+                from inky.auto import InkyUC8159  # noqa: F401
 
                 inky = InkyUC8159(resolution=(600, 448))
                 Himage = Converter(

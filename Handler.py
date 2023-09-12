@@ -103,7 +103,7 @@ class Handler(FileSystemEventHandler):
                 and self.target in event.src_path
             ):
                 self.init_timeout()
-                if event.event_type == "moved":
+                if event.event_type == "created":
                     self.fsLock.acquire()
                     if event.src_path in self.received:
                         return self.fsLock.release()

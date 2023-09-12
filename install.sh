@@ -1,11 +1,12 @@
 #!/bin/bash
 
-delay=20
-hostname="CatroZero"
+delay=5
+
+device="WS7in"
+
+hostname="FramyZero"
 wififile=$PWD"/wifi"
-blfile=$PWD"/bluetooth"
-mountfile="/mnt/pi_usb"
-datafile="/pi_usb.bin"
+blfile=$wififile"/static"
 
 if [ "$USER" != "root" ]
 then
@@ -16,6 +17,7 @@ fi
 echo "127.0.0.1	$hostname" | sudo tee -a /etc/hosts
 mkdir bluetooth
 mkdir wifi
+mkdir next
 
 loading(){
     pid=$!
@@ -30,46 +32,26 @@ loading(){
     echo ""
 }
 
-echo "Creating shared usb file"
-dd if=/dev/zero of=$datafile bs=1M count=8K &
-loading
-
-echo "Formating shared usb file"
-mkfs.vfat -F32 $datafile &
-loading
-
-echo "Enabeling USB OTG mass storage"
-if [ ! -z $(grep "dtoverlay=dwc2" "/boot/config.txt") ];
-    then echo "Already enabled dwc2";
-    else echo "dtoverlay=dwc2" | sudo tee -a /boot/config.txt;
-fi
-
-if [ ! -z $(grep "dwc2" "/etc/modules") ];
-    then echo "Already enabled dwc2";
-    else echo "dwc2" | sudo tee -a /etc/modules;
-fi
-
-if [ ! -z $(grep "g_mass_storage" "/etc/modules") ];
-    then echo "Already enabled g_mass_storage";
-    else echo "g_mass_storage" | sudo tee -a /etc/modules;
-fi
-
 echo "Installing dependencies"
 apt-get update
 apt-get upgrade -y --fix-missing
+apt-get install cron -y
+apt-get install cmake -y
+apt-get install libopencv-dev -y
+apt-get install python3-pip -y
+apt-get install python3-pil -y
 apt-get install samba screen python3 python3-pip -y
 apt-get install libbluetooth3 python3-dev libdbus-1-dev libc6 libwrap0 pulseaudio-module-bluetooth libglib2.0-dev libcairo2-dev libgirepository1.0-dev -y
 apt-get install libopenobex2 obexpushd -y
-
 if [ $? -eq 0 ];
     then echo "Obex installed sucessfully!";
     else
         apt-get install libopenobex2 -y
         arch=$(dpkg --print-architecture)
         echo "Trying manuall installation!"
-        wget "http://ftp.at.debian.org/debian/pool/main/o/obexpushd/obexpushd_0.11.2-1.1+b1_$arch.deb"
-        dpkg -i "obexpushd_0.11.2-1.1+b1_$arch.deb"
-        rm "obexpushd_0.11.2-1.1+b1_$arch.deb";
+        wget "http://ports.ubuntu.com/pool/universe/o/obexpushd/obexpushd_0.11.2-1.1build2_$arch.deb"
+        dpkg -i "obexpushd_0.11.2-1.1build2_$arch.deb"
+        rm "obexpushd_0.11.2-1.1build2_$arch.deb";
 fi
 apt-get install --fix-broken -y
 
@@ -79,13 +61,16 @@ echo "Installing dbus-python"
 pip3 install dbus-python
 echo "Installing PyGObject"
 pip3 install PyGObject
-
-echo "Mountig USB Storage to shared folder"
-mkdir -m 2777 $mountfile
-mount $datafile $mountfile
+pip3 install RPi.GPIO
+pip3 install spidev 
+pip3 install filetype
+pip3 install git+https://www.github.com/hbldh/hitherdither
+pip3 install inky
 
 echo "Creating network shared folder"
 mkdir -m 2777 $wififile
+mkdir -m 2777 "$wififile/static"
+touch $PWD/.update_static
 
 if [ ! -z $(grep "pi-share" "/etc/samba/smb.conf") ];
     then echo "Already created samba config";
@@ -138,10 +123,6 @@ ESCAPED_PATH=$(printf '%s\n' "$wififile" | sed -e 's/[\/&]/\\&/g')
 line=$(echo "$line" | sed "s/WFILE/$ESCAPED_PATH/g")
 ESCAPED_PATH=$(printf '%s\n' "$blfile" | sed -e 's/[\/&]/\\&/g')
 line=$(echo "$line" | sed "s/BLFILE/$ESCAPED_PATH/g")
-ESCAPED_PATH=$(printf '%s\n' "$mountfile" | sed -e 's/[\/&]/\\&/g')
-line=$(echo "$line" | sed "s/MNTFILE/$ESCAPED_PATH/g")
-ESCAPED_PATH=$(printf '%s\n' "$datafile" | sed -e 's/[\/&]/\\&/g')
-line=$(echo "$line" | sed "s/DATAFILE/$ESCAPED_PATH/g")
 
 touch $PWD/boot.sh
 if [ ! $? -eq 0 ];
@@ -152,12 +133,24 @@ fi
 echo "$line" | sudo tee ./boot.sh
 
 chmod +x $PWD/boot.sh
-cp $PWD/boot.sh /usr/local/bin/catropi.sh
-chmod +x /usr/local/bin/catropi.sh
-cp $PWD/catropi.service /etc/systemd/system/catropi.service
-chmod 640 /etc/systemd/system/catropi.service
-systemctl enable catropi.service
+cp $PWD/boot.sh /usr/local/bin/framy.sh
+chmod +x /usr/local/bin/framy.sh
+cp $PWD/framy.service /etc/systemd/system/framy.service
+chmod 640 /etc/systemd/system/framy.service
+systemctl enable framy.service
 
 bluetoothctl system-alias $hostname
 hostnamectl set-hostname $hostname
 hciconfig hci0 class 100100
+
+#write out current crontab
+crontab -l > mycron
+#echo new cron into cron file
+echo "@reboot touch $PWD/.update_static" >> mycron
+echo "*/5 * * * * sh $PWD/update.sh" >> mycron
+#install new cron file
+crontab mycron
+rm mycron
+
+echo "#!/bin/bash" > update.sh
+echo "python3 $PWD/FrameUpdater.py -f $wififile -d $device -s 0.5" >> update.sh

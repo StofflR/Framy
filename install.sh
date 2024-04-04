@@ -1,6 +1,6 @@
 #!/bin/bash
 
-delay=20
+delay=5
 hostname="CatroZero"
 wififile=$PWD"/wifi"
 blfile=$PWD"/bluetooth"

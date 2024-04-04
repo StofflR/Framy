@@ -73,6 +73,10 @@ if [ $? -eq 0 ];
 fi
 apt-get install --fix-broken -y
 
+
+python_version=$(python --version | tr '\n' ' ' | sed -e 's/[^0-9]/ /g' -e 's/^ *//g' -e 's/ *$//g' | tr -s ' ' | sed 's/ / /g' | awk '{print $2}')
+sudo rm /usr/lib/python3.$python_version/EXTERNALLY-MANAGED
+
 echo "Installing watchdog"
 pip3 install watchdog
 echo "Installing dbus-python"
@@ -103,7 +107,7 @@ if grep -q ' -C' "/etc/systemd/system/dbus-org.bluez.service";
     then echo "Already in compat mode";
     else
         echo "Set bluetoothd to compat mode"
-        execnum=$(sed -n "/Exec/=" /etc/systemd/system/dbus-org.bluez.service)
+        execnum=$(sed -n "/ExecStart/=" /etc/systemd/system/dbus-org.bluez.service)
         sed "$execnum s/.*/& -C/" /etc/systemd/system/dbus-org.bluez.service
         sed -i "$execnum s/.*/& -C/" /etc/systemd/system/dbus-org.bluez.service;
 fi
@@ -112,7 +116,7 @@ if grep -q ' -C' "/etc/systemd/system/bluetooth.target.wants/bluetooth.service";
     then echo "Already in compat mode";
     else
         echo "Set bluetoothd to compat mode"
-        execnum=$(sed -n "/Exec/=" /etc/systemd/system/bluetooth.target.wants/bluetooth.service)
+        execnum=$(sed -n "/ExecStart/=" /etc/systemd/system/bluetooth.target.wants/bluetooth.service)
         sed "$execnum s/.*/& -C/" /etc/systemd/system/bluetooth.target.wants/bluetooth.service
         sed -i "$execnum s/.*/& -C/" /etc/systemd/system/bluetooth.target.wants/bluetooth.service;
 fi
@@ -121,7 +125,7 @@ if grep -q ' -C' "/lib/systemd/system/bluetooth.service";
     then echo "Already in compat mode";
     else
         echo "Set bluetoothd to compat mode"
-        execnum=$(sed -n "/Exec/=" /lib/systemd/system/bluetooth.service)
+        execnum=$(sed -n "/ExecStart/=" /lib/systemd/system/bluetooth.service)
         sed "$execnum s/.*/& -C/" /lib/systemd/system/bluetooth.service
         sed -i "$execnum s/.*/& -C/" /lib/systemd/system/bluetooth.service;
 fi

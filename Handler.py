@@ -10,24 +10,32 @@ from watchdog.events import FileSystemEventHandler
 import filecmp
 import shlex
 
-class FileModified():
+
+class FileModified:
     def __init__(self, storeop=False) -> None:
         self.modified = False
         self.operations = []
         self.storeop = storeop
-        
+
     def modify(self, fileop):
         self.modified = True
         if self.storeop:
             if fileop not in self.operations:
-                print(fileop + " : will be executed on replug!") 
+                print(fileop + " : will be executed on replug!")
                 self.operations.append(fileop)
         else:
             os.system(fileop)
             print(fileop + " executed!")
 
+
+def sameFiles(path_a, path_b):
+    comp = filecmp.dircmp(path_a, path_b)
+    return comp.left_only == [] and comp.right_only == []
+
+
 class Handler(FileSystemEventHandler):
-    def __init__(self, source: str, target: str, actionLock: threading.Lock, changed:FileModified, addTimeTag=False, largeFileLock=None):
+    def __init__(self, source: str, target: str, actionLock: threading.Lock, changed: FileModified, addTimeTag=False,
+                 largeFileLock=None):
         self.source = source
         self.target = target
         self.fsLock = actionLock
@@ -37,7 +45,7 @@ class Handler(FileSystemEventHandler):
         self.alive = True
         self.timeout_lock = largeFileLock
         self.timeout_start = datetime.datetime.now()
-        
+
     def start(self):
         self.observer.schedule(self, path=self.source, recursive=True)
         self.observer.start()
@@ -48,10 +56,6 @@ class Handler(FileSystemEventHandler):
 
     def join(self):
         self.observer.join()
-
-    def sameFiles(self, path_a, path_b):
-        comp = filecmp.dircmp(a=path_a, b=path_b)
-        return (comp.left_only == [] and comp.right_only == [])
 
     def init_timeout(self):
         if not self.timeout_lock: return
@@ -74,17 +78,17 @@ class Handler(FileSystemEventHandler):
                 if self.addTimeTag:
                     t = time.localtime()
                     timestamp = time.strftime('%Y-%d-%b_%H%M', t)
-                    
+
                     splitName = file.rsplit(".", 1)
                     file = splitName[0] + "_" + timestamp
                     if len(splitName) > 1:
                         file = file + "." + splitName[1]
-                    
+
                 target = self.target + file
                 if self.changed and self.addTimeTag:
-                    self.changed.modify("mv "+shlex.quote(event.src_path)+" "+ shlex.quote(target))
+                    self.changed.modify("mv " + shlex.quote(event.src_path) + " " + shlex.quote(target))
                 elif self.changed:
-                    self.changed.modify("cp "+shlex.quote(event.src_path)+" "+ shlex.quote(target))
+                    self.changed.modify("cp " + shlex.quote(event.src_path) + " " + shlex.quote(target))
                 self.fsLock.release()
             elif event.event_type == 'deleted':
                 self.fsLock.acquire()
@@ -92,7 +96,7 @@ class Handler(FileSystemEventHandler):
                 target = self.target + file
                 if os.path.exists(target):
                     if self.changed:
-                        self.changed.modify("rm " + shlex.quote(tartet))
+                        self.changed.modify("rm " + shlex.quote(target))
                 else:
-                    print("Target file: "+ target+ " not found!")
+                    print("Target file: " + target + " not found!")
                 self.fsLock.release()

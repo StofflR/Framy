@@ -4,7 +4,7 @@ from PIL import Image
 class Device:
     WS7in = "WS7in"
     Inky = "inky"
-
+    Unknown = "unknown"
 class Converter:
     
     DESATURATED_PALETTE = [

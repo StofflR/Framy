@@ -122,20 +122,21 @@ class Handler(FileSystemEventHandler):
                     file = splitName[0] + "_" + timestamp
                     if len(splitName) > 1:
                         file = file + "." + splitName[1]
-
-                target = self.target + file
-                if self.changed and self.addTimeTag:
-                    self.changed.modify("mv " + shlex.quote(event.src_path) + " " + shlex.quote(target))
-                elif self.changed:
-                    self.changed.modify("cp " + shlex.quote(event.src_path) + " " + shlex.quote(target))
+                if self.target:
+                    target = self.target + file
+                    if self.changed and self.addTimeTag:
+                        self.changed.modify("mv " + shlex.quote(event.src_path) + " " + shlex.quote(target))
+                    elif self.changed:
+                        self.changed.modify("cp " + shlex.quote(event.src_path) + " " + shlex.quote(target))
                 self.fsLock.release()
             elif event.event_type == 'deleted':
                 self.fsLock.acquire()
                 file = event.src_path.replace(self.source, "")
-                target = self.target + file
-                if os.path.exists(target):
-                    if self.changed:
-                        self.changed.modify("rm " + shlex.quote(target))
-                else:
-                    print("Target file: " + target + " not found!")
+                if self.target:
+                    target = self.target + file
+                    if os.path.exists(target):
+                        if self.changed:
+                            self.changed.modify("rm " + shlex.quote(target))
+                    else:
+                        print("Target file: " + target + " not found!")
                 self.fsLock.release()

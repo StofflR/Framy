@@ -128,6 +128,8 @@ class Handler(FileSystemEventHandler):
                         self.changed.modify("mv " + shlex.quote(event.src_path) + " " + shlex.quote(target))
                     elif self.changed:
                         self.changed.modify("cp " + shlex.quote(event.src_path) + " " + shlex.quote(target))
+                else:
+                    self.changed.modified = True
                 self.fsLock.release()
             elif event.event_type == 'deleted':
                 self.fsLock.acquire()
@@ -139,4 +141,6 @@ class Handler(FileSystemEventHandler):
                             self.changed.modify("rm " + shlex.quote(target))
                     else:
                         print("Target file: " + target + " not found!")
+                else:
+                    self.changed.modified = True
                 self.fsLock.release()

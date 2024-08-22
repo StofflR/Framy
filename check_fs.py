@@ -166,6 +166,7 @@ def main():
                     op = wifiFiles.operations.pop(0)
                     print("Executing: " + op)
                     os.system(op)
+                updateImage(args.device, args.saturation, args.wifi)
                 os.execl(sys.executable, sys.executable, *sys.argv)
             elif wifiFiles.modified:
                 print("Replug in: " + str(round(args.timeout -

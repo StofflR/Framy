@@ -10,7 +10,7 @@ from os import getcwd, path
 
 # Default values
 DELAY = 5
-HOSTNAME = "CatroZero"
+HOSTNAME = "framy"
 WIFI_PATH = path.join(getcwd(), "wifi")
 BLUETOOTH_PATH = path.join(getcwd(), "bluetooth")
 MOUNT_FILE = "/mnt/piusb"

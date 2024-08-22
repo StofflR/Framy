@@ -46,10 +46,9 @@ def getImagePath(dir_path, valid_extensions=('jpg', 'jpeg', 'png')):
 
 
 def updateImage(device, saturation, folder):
-    image = getImagePath(folder)
-    if image is None:
+    image_path = getImagePath(folder)
+    if image_path is None:
         return
-    image_path, time_tag = image
     try:
         if device == Device.WS7in or device == DEVICES[-1]:
             try:

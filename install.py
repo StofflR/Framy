@@ -48,6 +48,7 @@ BLUETOOTH_PATH = args.bluetooth_path
 MOUNT_FILE = args.mount_file
 DATA_FILE = args.data_file
 USB_SIZE = args.usb_size
+VENV_PATH = args.venv
 PYTHON = path.join(VENV_PATH, "python")
 
 # Print values to verify

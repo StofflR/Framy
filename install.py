@@ -128,14 +128,14 @@ run_command([["fallocate", "-l", USB_SIZE, DATA_FILE]], "Creating shared usb fil
 run_command([["mkfs.vfat", "-F32", DATA_FILE]], "Formating shared usb file")
 
 
-config_file = "/boot/config.txt"
+config_file = "/boot/config.txt" if not path.exists("/boot/firmware/config.txt") else "/boot/firmware/config.txt"
 dtoverlay_line = "dtoverlay=dwc2"
 
 # Check if "dtoverlay=dwc2" is already enabled in /boot/config.txt
-print("Already enabled dwc2") if dtoverlay_line in open(config_file).read() else open(config_file, "a").write(dtoverlay_line + "\n")
+print("Already enabled dwc2 config") if dtoverlay_line in open(config_file).read() else open(config_file, "a").write(dtoverlay_line + "\n")
 
 # Check if "dwc2" is already enabled in /etc/modules
-print("Already enabled dwc2") if "dwc2" in open("/etc/modules").read() else open("/etc/modules", "a").write("dwc2\n")
+print("Already enabled dwc2 module") if "dwc2" in open("/etc/modules").read() else open("/etc/modules", "a").write("dwc2\n")
 
 # Check if "g_mass_storage" is already enabled in /etc/modules
 print("Already enabled g_mass_storage") if "g_mass_storage" in open("/etc/modules").read() else open("/etc/modules", "a").write("g_mass_storage\n")

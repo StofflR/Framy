@@ -32,7 +32,8 @@ def unplug(unmount):
     command = "sudo modprobe -r g_mass_storage"
     print("Executing: " + command)
     os.system(command)
-    unmount()
+    if unmount is not None:
+        unmount()
 
 
 def main():
@@ -91,7 +92,9 @@ def main():
     wifiHandler.start()
     print("Initializing file system!")
     # TODO: handle files modified from usb side
-    time.sleep(args.timeout/2)
+    plug(args.usb, mount)
+    unplug(None)
+    time.sleep(args.timeout)
     plug(args.usb, mount)
     print("Started Watching!")
     try:

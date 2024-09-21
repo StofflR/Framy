@@ -48,7 +48,7 @@ BLUETOOTH_PATH = args.bluetooth_path
 MOUNT_FILE = args.mount_file
 DATA_FILE = args.data_file
 USB_SIZE = args.usb_size
-PYTHON = path.join(VENV_PATH, "python3")
+PYTHON = path.join(VENV_PATH, "python")
 
 # Print values to verify
 print(f"DELAY: {DELAY}")

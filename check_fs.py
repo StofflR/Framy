@@ -22,7 +22,8 @@ def replug(timeoutStart, timeout):
 
 
 def plug(target, mount):
-    mount()
+    if mount is not None:
+        mount()
     command = "sudo modprobe g_mass_storage file="+target+" stall=0 removable=1"
     print("Executing: " + command)
     os.system(command)
@@ -92,7 +93,7 @@ def main():
     wifiHandler.start()
     print("Initializing file system!")
     # TODO: handle files modified from usb side
-    plug(args.usb, mount)
+    plug(args.usb, None)
     unplug(None)
     time.sleep(args.timeout)
     plug(args.usb, mount)

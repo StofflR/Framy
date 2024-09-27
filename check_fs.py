@@ -143,9 +143,9 @@ def main():
     blFiles = FileModified()
 
     blHandler = Handler(source=args.bluetooth, target=args.wifi,
-                        actionLock=replugLock,  addTimeTag=True, changed=blFiles)
+                        actionLock=replugLock,  changed=blFiles)
     wifiHandler = Handler(source=args.wifi, target=None,
-                          actionLock=replugLock,  addTimeTag=False, changed=wifiFiles, largeFileLock=largeFileLock)
+                          actionLock=replugLock,  changed=wifiFiles, largeFileLock=largeFileLock)
     blHandler.start()
     print("Initializing file system!")
     # TODO: handle files modified from usb side

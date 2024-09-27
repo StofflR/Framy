@@ -34,7 +34,7 @@ def sameFiles(path_a, path_b):
 
 
 class Handler(FileSystemEventHandler):
-    def __init__(self, source: str, target: str, actionLock: threading.Lock, changed: FileModified, addTimeTag=False,
+    def __init__(self, source: str, target: str, actionLock: threading.Lock, changed: FileModified,
                  largeFileLock=None):
         self.source = source
         self.target = target
@@ -116,19 +116,9 @@ class Handler(FileSystemEventHandler):
                     )
                     thrd.start()
 
-                if self.addTimeTag:
-                    t = time.localtime()
-                    timestamp = time.strftime('%Y-%d-%b_%H%M', t)
-
-                    splitName = file.rsplit(".", 1)
-                    file = splitName[0] + "_" + timestamp
-                    if len(splitName) > 1:
-                        file = file + "." + splitName[1]
                 if self.target:
                     target = self.target + file
-                    if self.changed and self.addTimeTag:
-                        self.changed.modify("mv " + shlex.quote(event.src_path) + " " + shlex.quote(target))
-                    elif self.changed:
+                    self.changed:
                         self.changed.modify("cp " + shlex.quote(event.src_path) + " " + shlex.quote(target))
                 else:
                     self.changed.modified = True

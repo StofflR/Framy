@@ -138,6 +138,7 @@ def main():
                  args.wifi, "\nTimeout: ", args.timeout)
 
     replugLock = threading.Lock()
+    wifiFiles = FileModified(storeop=True)
     blFiles = FileModified()
 
     blHandler = Handler(source=args.bluetooth, target=args.wifi,

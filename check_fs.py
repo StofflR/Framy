@@ -138,6 +138,7 @@ def main():
                  args.wifi, "\nTimeout: ", args.timeout)
 
     replugLock = threading.Lock()
+    largeFileLock = threading.Lock()
     wifiFiles = FileModified(storeop=True)
     blFiles = FileModified()
 

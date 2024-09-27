@@ -214,6 +214,11 @@ set_compat("/etc/systemd/system/bluetooth.target.wants/bluetooth.service", "targ
 set_compat("/lib/systemd/system/bluetooth.service", "system/bluetooth")
 
 
+# generate dithering executable
+subprocess.run(["cmake", "CMakeLists.txt"])
+subprocess.run(["make"])
+
+
 # Read the contents of the boot_config.txt file
 
 boot_file = path.join(getcwd(), "boot.sh")

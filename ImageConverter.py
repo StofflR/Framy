@@ -54,16 +54,21 @@ class Converter:
         return palette
 
     def convert(self):
-        # Image size doesn't matter since it's just the palette we're using
-        # Set our 7 colour palette (+ clear) and zero out the other 247 colours
-        pallet_blend_waveshare =[0,0,0,  255,255,255,  0,255,0,   0,0,255,  255,0,0,  255,255,0, 255,128,0] + [0,0,0]*249
-        image_7color = Image.open(self.image).convert("RGB").resize(self.resolution)
-        # Force source image data to be loaded for `.im` to work
-        palette = hitherdither.palette.Palette(self._palette_blend("uint24"))
-        image_dithered = hitherdither.diffusion.error_diffusion_dithering(image_7color, palette, method="stucki", order=3)
-        if self.device == Device.WS7in:
-            image_dithered.putpalette(pallet_blend_waveshare)
-        return image_dithered
+        subprocess.run(["./dither", self.image, "dithered.png"])
+        return Image.open("dithered.png").convert("RGB").resize(self.resolution)
+
+
+    #def convert(self):
+    #    # Image size doesn't matter since it's just the palette we're using
+    #    # Set our 7 colour palette (+ clear) and zero out the other 247 colours
+    #    pallet_blend_waveshare =[0,0,0,  255,255,255,  0,255,0,   0,0,255,  255,0,0,  255,255,0, 255,128,0] + [0,0,0]*249
+    #    image_7color = Image.open(self.image).convert("RGB").resize(self.resolution)
+    #    # Force source image data to be loaded for `.im` to work
+    #    palette = hitherdither.palette.Palette(self._palette_blend("uint24"))
+    #    image_dithered = hitherdither.diffusion.error_diffusion_dithering(image_7color, palette, method="stucki", order=3)
+    #    if self.device == Device.WS7in:
+    #        image_dithered.putpalette(pallet_blend_waveshare)
+    #    return image_dithered
 
 if __name__ == "__main__":
     path =  "a colonized moon with rings, digital art.png"

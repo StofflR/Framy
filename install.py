@@ -141,7 +141,7 @@ print("Already enabled dwc2 module") if "dwc2" in open("/etc/modules").read() el
 print("Already enabled g_mass_storage") if "g_mass_storage" in open("/etc/modules").read() else open("/etc/modules", "a").write("g_mass_storage\n")
 
 run_command([["apt-get", "install", "samba", "screen", "-y"],
-             ["apt-get", "install", "libbluetooth3", "python3-dev", "libdbus-1-dev", "libc6", "libwrap0", "pulseaudio-module-bluetooth", "libglib2.0-dev", "libcairo2-dev", "libgirepository1.0-dev", "-y"],
+             ["apt-get", "install", "libbluetooth3", "python3-dev", "python3-numpy", "libblas-dev", "libdbus-1-dev", "libc6", "libwrap0", "pulseaudio-module-bluetooth", "libglib2.0-dev", "libcairo2-dev", "libgirepository1.0-dev", "-y"],
              ["apt-get", "install", "libopenobex2", "obexpushd", "-y"]], "Installing dependencies")
 
 # Check if libopenobex2 is already installed 

@@ -41,7 +41,8 @@ class Handler(FileSystemEventHandler):
         self.fsLock = actionLock
         self.changed = changed
         self.observer = Observer()
-        self.alive = True
+        self.alive = True        
+        self.timeout_lock = largeFileLock
         self.timeout_start = datetime.datetime.now()
 
     def start(self):

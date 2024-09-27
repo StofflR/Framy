@@ -44,7 +44,8 @@ class Handler(FileSystemEventHandler):
         self.alive = True        
         self.timeout_lock = largeFileLock
         self.timeout_start = datetime.datetime.now()
-
+        self.received = []
+        
     def start(self):
         self.observer.schedule(self, path=self.source, recursive=True)
         self.observer.start()

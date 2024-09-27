@@ -118,7 +118,7 @@ class Handler(FileSystemEventHandler):
 
                 if self.target:
                     target = self.target + file
-                    self.changed:
+                    if self.changed:
                         self.changed.modify("cp " + shlex.quote(event.src_path) + " " + shlex.quote(target))
                 else:
                     self.changed.modified = True

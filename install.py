@@ -212,7 +212,7 @@ set_compat("/etc/systemd/system/dbus-org.bluez.service", "bluez")
 set_compat("/etc/systemd/system/bluetooth.target.wants/bluetooth.service", "target.wants.bluetooth")
 set_compat("/lib/systemd/system/bluetooth.service", "system/bluetooth")
 
-run_command([["apt-get", "install", "cmake", "libopencv-dev", "-y"]])
+run_command([["apt-get", "install", "cmake", "libopencv-dev", "-y"]], "Installing dithering components")
 
 # generate dithering executable
 subprocess.run(["cmake", "CMakeLists.txt"])

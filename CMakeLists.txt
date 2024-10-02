@@ -15,7 +15,12 @@ find_package(OpenCV REQUIRED)
 # Add include directories
 include_directories(${OpenCV_INCLUDE_DIRS})
 
+set(files
+        dithering/dither.cpp
+        dithering/dither.h
+)
+
 # Add source files
-add_executable(dither dither.cpp)
+add_executable(dither ${files})
 
 target_link_libraries(dither ${OpenCV_LIBS} ${Python_LIBRARIES} ${pybind11_LIBRARIES})

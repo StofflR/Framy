@@ -1,5 +1,7 @@
 import hitherdither
 from PIL import Image
+import subprocess
+import numpy
 
 class Device:
     WS7in = "WS7in"
@@ -54,8 +56,10 @@ class Converter:
         return palette
 
     def convert(self):
-        subprocess.run(["./dither", self.image, "dithered.png"])
-        return Image.open("dithered.png").convert("RGB").resize(self.resolution)
+        Image.open(self.image).resize(self.resolution).save("converted.png", "PNG")
+        subprocess.run(["./dither", "converted.png", "dithered.png"])
+        return Image.open("dithered.png")
+        #return Image.fromarray(numpy.array(Image.open("dithered.png"))[:,:,::-1])
 
 
     #def convert(self):

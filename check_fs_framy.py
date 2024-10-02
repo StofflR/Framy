@@ -13,7 +13,16 @@ DEVICES = [Device.WS7in, Device.Inky, Device.Unknown]
 def isObexRunning():
     return os.popen("pgrep obexpushd").read() != ""
 
+def restricted_float(x):
+    try:
+        x = float(x)
+    except ValueError:
+        raise argparse.ArgumentTypeError("%r not a floating-point literal" % (x,))
 
+    if x < 0.0 or x > 1.0:
+        raise argparse.ArgumentTypeError("%r not in range [0.0, 1.0]" % (x,))
+    return x
+    
 def startObex(bluetooth_folder):
     os.system("sudo obexpushd -B23 -o " + bluetooth_folder + " -n &")
 

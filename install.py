@@ -36,6 +36,7 @@ parser.add_argument("--mount-file", type=str, default=MOUNT_FILE, help="Mount fi
 parser.add_argument("--data-file", type=str, default=DATA_FILE, help="Data file path")
 parser.add_argument("--usb-size", type=str, default=USB_SIZE, help="USB size e.g. 8.0G or 8M")
 parser.add_argument("--venv", type=str, default=VENV_PATH, help="Path to python virtual environment bin folder e.g. .venv/bin")
+parser.add_argument("--update", type=bool, default=False, help="Update system packages")
 
 # Parse arguments
 args = parser.parse_args()
@@ -96,6 +97,10 @@ if hasattr(sys, 'real_prefix') or (hasattr(sys, 'base_prefix') and sys.base_pref
 else:
     print("Python is not running in a virtual environment.")
     exit(1)
+
+if(args.update):
+    run_command([["apt", "update", "-y"], ["apt", "upgrade", "-y"]], "Updating system")
+
 
 mkdir(BLUETOOTH_PATH) if not path.exists(BLUETOOTH_PATH) else print("Bluetooth path already exists")
 mkdir(WIFI_PATH) if not path.exists(WIFI_PATH) else print("WiFi path already exists")
@@ -215,7 +220,7 @@ set_compat("/lib/systemd/system/bluetooth.service", "system/bluetooth")
 run_command([["apt-get", "install", "cmake", "libopencv-dev", "-y"]], "Installing dithering components")
 
 # generate dithering executable
-subprocess.run(["cmake", "CMakeLists.txt"])
+subprocess.run(["cmake", "-DCMAKE_BUILD_TYPE=Release", "."])
 subprocess.run(["make"])
 
 

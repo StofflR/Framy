@@ -5,7 +5,7 @@ import numpy
 
 class Device:
     WS7in = "WS7in"
-    Inky = "inky"
+    Inky = "Inky"
     Unknown = "unknown"
 class Converter:
     

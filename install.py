@@ -132,9 +132,11 @@ def run_command(commands, display):
 run_command([["fallocate", "-l", USB_SIZE, DATA_FILE]], "Creating shared usb file")
 run_command([["mkfs.vfat", "-F32", DATA_FILE]], "Formating shared usb file")
 
+run_command([["raspi-config", "nonint", "do_i2c", "0"]], "Enable i2c")
+run_command([["raspi-config", "nonint", "do_spi", "0"]], "Enable spi")
 
 config_file = "/boot/config.txt" if not path.exists("/boot/firmware/config.txt") else "/boot/firmware/config.txt"
-dtoverlay_line = "dtoverlay=dwc2"
+dtoverlay_line = "dtoverlay=spi0-0cs,dwc2"
 
 # Check if "dtoverlay=dwc2" is already enabled in /boot/config.txt
 print("Already enabled dwc2 config") if dtoverlay_line in open(config_file).read() else open(config_file, "a").write(dtoverlay_line + "\n")

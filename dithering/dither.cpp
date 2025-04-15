@@ -1,5 +1,5 @@
 #include "dither.h"
-
+#include <omp.h>
 #include <opencv2/opencv.hpp>
 #include <vector>
 #include <optional>
@@ -34,9 +34,16 @@ namespace dither
     {
         // transform BGR to LAB
         cv::Mat lab1, lab2;
-        cv::cvtColor(cv::Mat(1, 1, CV_8UC3, color1), lab1, cv::COLOR_BGR2YUV);
-        cv::cvtColor(cv::Mat(1, 1, CV_8UC3, color2), lab2, cv::COLOR_BGR2YUV);
-        return cv::norm(lab1, lab2, norm);
+        cv::cvtColor(cv::Mat(1, 1, CV_8UC3, color1), lab1, cv::COLOR_BGR2Lab);
+        cv::cvtColor(cv::Mat(1, 1, CV_8UC3, color2), lab2, cv::COLOR_BGR2Lab);
+        // convert to 3 channel
+        lab1.convertTo(lab1, CV_64F);
+        lab2.convertTo(lab2, CV_64F);
+
+        auto dist = lab1 - lab2;
+
+        // calculate the distance
+        return cv::norm(dist, norm);
     }
 
     cv::Vec3b pixel_closest_colour(std::vector<cv::Vec3b>& palette, const cv::Vec3b& old_pixel,
@@ -45,6 +52,7 @@ namespace dither
         std::optional<cv::Vec3b> closest_colour = std::nullopt;
         auto min_distance = std::numeric_limits<double>::max();
         std::ranges::shuffle(palette, g);
+        #pragma omp for
         for (const auto& color : palette)
         {
             if (const auto distance = colorDistance(old_pixel, color, norm); distance < min_distance)
@@ -56,43 +64,61 @@ namespace dither
         return closest_colour.value_or(palette.front());
     }
 
-
-    void ditherImage(const std::list<cv::Vec3b>& palette, cv::Mat& image,
-                     const method method = FLOYD_STEINBERG, const cv::NormTypes norm = cv::NORM_L2)
+    void apply_neighbour_diffusion(const method& diff_method,
+                                   cv::Mat& image, const int y, const int x,
+                                   const cv::Vec3b& quantization_error)
     {
-        std::vector<cv::Vec3b> colors = {palette.begin(), palette.end()};
-        std::cout.precision(2);
-        const auto& diff_map = dither::diffusion_map[method];
-        std::cout << "Dithering image using " << method << " method" << std::endl;
-        auto y = 0;
-        for (auto* row = image.ptr<cv::Vec3b>(y); y < image.rows; row = image.ptr<cv::Vec3b>(++y))
+        #pragma omp for
+        for (auto [dx, dy, diffusion_coefficient] : diffusion_map[diff_method])
         {
-            std::cout << "\rprogress: " << 1.0 * y / image.rows << "\t" << std::flush;
-            auto x = 0;
-            auto* pixel = row;
-            while (x < image.cols)
+            const auto xn = x + dx;
+            const auto yn = y + dy;
+            if ((0 <= xn && xn < image.cols) && (0 <= yn && yn < image.rows))
             {
-                auto new_pixel = pixel_closest_colour(colors, *pixel, norm);
-                auto quantization_error = *pixel - new_pixel;
-                *pixel = new_pixel;
-                for (auto [dx, dy, diffusion_coefficient] : diff_map)
-                {
-                    const auto xn = x + dx;
-                    const auto yn = y + dy;
-                    if ((0 <= xn && xn < image.cols) && (0 <= yn && yn < image.rows))
-                    {
-                        image.at<cv::Vec3b>(yn, xn) +=
-                            quantization_error * diffusion_coefficient;
-                    }
-                }
-                x++;
-                pixel++;
+                image.at<cv::Vec3b>(yn, xn) +=
+                    quantization_error * diffusion_coefficient;
             }
         }
-        std::cout << "\rprogress: done\t" << std::endl;
-        // iterate over every pixel
-        for (const auto& pixel : {image.begin<cv::Vec3b>(), image.end<cv::Vec3b>()})
-            *pixel = pixel_closest_colour(colors, *pixel, norm);
+    }
+
+    void ditherImage(const std::list<cv::Vec3b>& palette, cv::Mat& image,
+                     const method diff_method = FLOYD_STEINBERG, const cv::NormTypes norm = cv::NORM_L2)
+    {
+        std::vector<cv::Vec3b> colors = {palette.begin(), palette.end()};
+
+        
+        std::cout << "Dithering image using " << diff_method << " method" << std::endl;
+
+        #pragma omp for 
+        for (auto y = 0; y < image.rows; y++)
+        {
+            auto* pixel = image.ptr<cv::Vec3b>(y);
+            std::cout.precision(2);
+            std::cout << "\rprogress: " << 1.0 * y / image.rows << "\t" << std::flush;
+
+            // shuffle the pixels in the row
+            for (auto x = 0; x < image.cols; x++)
+            {
+                auto new_pixel = pixel_closest_colour(colors, pixel[x], norm);
+                auto quantization_error = pixel[x] - new_pixel;
+                
+                pixel[x] = new_pixel;
+                apply_neighbour_diffusion(diff_method, image, y, x, quantization_error);
+                    
+            }
+        }
+        std::cout << "\rprogress: done\t\t" << std::endl;
+        // color each pixel in the image white
+        #pragma omp for
+        for (auto y = 0; y < image.rows; y++)
+        {
+            auto* pix = image.ptr<cv::Vec3b>(y);
+            
+            for (auto x = 0; x < image.cols; x++)
+            {
+               pix[x] = pixel_closest_colour(colors, pix[x], norm);
+            }
+        }
     }
 }
 
@@ -100,7 +126,7 @@ namespace dither
 void generateDitheredImage(const std::string& image_path, const std::string& out_path)
 {
     cv::Mat img = cv::imread(image_path, cv::IMREAD_COLOR);
-    dither::ditherImage(dither::palettes::waveshare7color, img, dither::STEVENSON_ARCE, cv::NORM_L1);
+    dither::ditherImage(dither::palettes::waveshare7color, img, dither::STEVENSON_ARCE, cv::NORM_L2);
     cv::imwrite(out_path, img);
 }
 

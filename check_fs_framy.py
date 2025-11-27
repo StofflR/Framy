@@ -156,7 +156,7 @@ def updateRandomImage(device, folder):
     except IOError as e:
         print(e)
 
-def wait_for_file_complete(file_path, stable_time=2, timer=None):
+def wait_for_file_complete(file_path, stable_time=7, timer=None):
     """
     Wait until the file size remains stable for stable_time seconds
     to ensure the transfer is complete
@@ -175,12 +175,12 @@ def wait_for_file_complete(file_path, stable_time=2, timer=None):
         try:
             current_size = os.path.getsize(file_path)
             if current_size == previous_size:
-                time.sleep(0.5)
-                stable_duration += 0.5
+                time.sleep(2)
+                stable_duration += 2
             else:
                 previous_size = current_size
                 stable_duration = 0
-                time.sleep(0.5)
+                time.sleep(2)
         except OSError:
             return False
     

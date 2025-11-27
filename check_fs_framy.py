@@ -115,11 +115,15 @@ def updateImage(device, saturation, image_path):
         print(e)
 
 def updateRandomImage(device, folder):
+    print("Updating random image...")
     if not os.path.exists(folder):
+        print(f"Folder does not exist: {folder}")
         return
     image_path = getRandomImagePath(folder)
     if image_path is None:
+        print("No random image found to update")
         return
+    print(f"Updating random image: {image_path}")
     try:
         Himage = Image.open(image_path)
         if device == Device.WS7in or device == DEVICES[-1]:

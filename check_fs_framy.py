@@ -3,11 +3,12 @@ import os
 import time
 import argparse
 import threading
-from Handler import Handler, FileModified
 import datetime
 from ImageConverter import Device, Converter
 import random
 from PIL import Image
+from watchdog.observers import Observer
+from watchdog.events import FileSystemEventHandler
 
 DEVICES = [Device.WS7in, Device.Inky, Device.Unknown]
 
@@ -150,6 +151,74 @@ def updateRandomImage(device, folder):
     except IOError as e:
         print(e)
 
+def wait_for_file_complete(file_path, stable_time=2):
+    """
+    Wait until the file size remains stable for stable_time seconds
+    to ensure the transfer is complete
+    """
+    if not os.path.exists(file_path):
+        return False
+    
+    previous_size = -1
+    stable_duration = 0
+    
+    while stable_duration < stable_time:
+        try:
+            current_size = os.path.getsize(file_path)
+            if current_size == previous_size:
+                time.sleep(0.5)
+                stable_duration += 0.5
+            else:
+                previous_size = current_size
+                stable_duration = 0
+                time.sleep(0.5)
+        except OSError:
+            return False
+    
+    return True
+
+class ImageFileHandler(FileSystemEventHandler):
+    """Handles file system events for new image files"""
+    
+    def __init__(self, device, saturation, bluetooth_folder, wifi_folder):
+        self.device = device
+        self.saturation = saturation
+        self.bluetooth_folder = bluetooth_folder
+        self.wifi_folder = wifi_folder
+        self.valid_extensions = ('jpg', 'jpeg', 'png')
+    
+    def on_created(self, event):
+        if event.is_directory:
+            return
+        
+        file_path = event.src_path
+        
+        # Check if it's a valid image file
+        if '.' in file_path and file_path.rsplit('.', 1)[-1].lower() in self.valid_extensions:
+            print(f"New file detected: {file_path}")
+            
+            # Wait for file transfer to complete
+            print("Waiting for file transfer to complete...")
+            if wait_for_file_complete(file_path):
+                print("File transfer complete. Updating image...")
+                
+                # Determine which folder the file is in
+                if file_path.startswith(self.bluetooth_folder):
+                    folder = self.bluetooth_folder
+                elif file_path.startswith(self.wifi_folder):
+                    folder = self.wifi_folder
+                else:
+                    return
+                
+                # Update the image
+                updateImage(self.device, self.saturation, folder)
+                
+                # Restart the program
+                print("Restarting program...")
+                os.execl(sys.executable, sys.executable, *sys.argv)
+            else:
+                print(f"Failed to confirm file transfer completion for {file_path}")
+
 def main():
     parser = argparse.ArgumentParser(
         prog="CatroZero file  watchdog",
@@ -199,52 +268,42 @@ def main():
     print("Bluetooth source: ", args.bluetooth, "\nWifi source: ",
                  args.wifi, "\nTimeout: ", args.timeout)
 
-    replugLock = threading.Lock()
-    largeFileLock = threading.Lock()
-    wifiFiles = FileModified(storeop=True)
-    blFiles = FileModified()
-
-    blHandler = Handler(source=args.bluetooth, target=args.wifi,
-                        actionLock=replugLock,  changed=blFiles)
-    wifiHandler = Handler(source=args.wifi, target=None,
-                          actionLock=replugLock,  changed=wifiFiles, largeFileLock=largeFileLock)
-    blHandler.start()
-    print("Initializing file system!")
+    # Create event handler and observer
+    event_handler = ImageFileHandler(args.device, args.saturation, args.bluetooth, args.wifi)
+    observer = Observer()
+    
+    # Watch both bluetooth and wifi folders
+    if os.path.exists(args.bluetooth):
+        observer.schedule(event_handler, args.bluetooth, recursive=False)
+        print(f"Watching bluetooth folder: {args.bluetooth}")
+    else:
+        print(f"Bluetooth folder does not exist: {args.bluetooth}")
+    
+    if os.path.exists(args.wifi):
+        observer.schedule(event_handler, args.wifi, recursive=False)
+        print(f"Watching wifi folder: {args.wifi}")
+    else:
+        print(f"Wifi folder does not exist: {args.wifi}")
+    
+    observer.start()
+    
+    # Start timer for random image update
     timer = threading.Timer(60.0, updateRandomImage, args=(args.device, "output"))
     timer.start()
-    print("Initialized updating random Image!")
-    
-    # TODO: handle files modified from usb side
-    time.sleep(args.timeout/2)
-    print("Started Watching!")
+   
     try:
-        previousState = False
-        while wifiHandler.alive and blHandler.alive:
-            if previousState != wifiFiles.modified:
-                previousState = wifiFiles.modified
-                print("Files modified!")
-            wifiHandler.timeout_lock.acquire()
-            if ((datetime.datetime.now() - wifiHandler.timeout_start).total_seconds() > args.timeout) and wifiFiles.modified:
-                print("Restarting watchdog!")
-                # blHandler.stop()
-                # wifiHandler.stop()
-                print("Stopped Watching!")
-                while not len(wifiFiles.operations) == 0:
-                    op = wifiFiles.operations.pop(0)
-                    print("Executing: " + op)
-                    os.system(op)
-                updateImage(args.device, args.saturation, args.wifi)
-                os.execl(sys.executable, sys.executable, *sys.argv)
-            elif wifiFiles.modified:
-                print("Replug in: " + str(round(args.timeout -
-                      (datetime.datetime.now() - wifiHandler.timeout_start).total_seconds())))
-            wifiHandler.timeout_lock.release()
-            time.sleep(args.timeout / 10)
-
+        # Keep the program running
+        while True:
+            time.sleep(1)
     except KeyboardInterrupt:
         print("Stopped Watching!")
+        observer.stop()
+        observer.join()
+        timer.cancel()
         os.execl(sys.executable, sys.executable, *sys.argv)
-        pass
+    
+    observer.stop()
+    observer.join()
     print("Stopped Watching!")
     os.execl(sys.executable, sys.executable, *sys.argv)
 

@@ -6,6 +6,8 @@ import threading
 from Handler import Handler, FileModified
 import datetime
 from ImageConverter import Device, Converter
+import random
+from PIL import Image
 
 DEVICES = [Device.WS7in, Device.Inky, Device.Unknown]
 
@@ -53,6 +55,20 @@ def getImagePath(dir_path, valid_extensions=('jpg', 'jpeg', 'png')):
 
     return max(valid_files, key=os.path.getmtime)
 
+def getRandomImagePath(dir_path, valid_extensions=('jpg', 'jpeg', 'png')):
+    """
+    Get a random image file in the given directory
+    """
+
+    # get filepaths of all files and dirs in the given dir
+    valid_files = [os.path.join(dir_path, filename) for filename in os.listdir(dir_path)]
+    # filter out directories, no-extension, and wrong extension files
+    valid_files = [f for f in valid_files if '.' in f and \
+                   f.rsplit('.', 1)[-1] in valid_extensions and os.path.isfile(f)]
+    if not valid_files:
+        return None
+
+    return random.choice(valid_files)
 
 def updateImage(device, saturation, folder):
     image_path = getImagePath(folder)
@@ -96,6 +112,43 @@ def updateImage(device, saturation, folder):
     except IOError as e:
         print(e)
 
+def updateRandomImage(device, folder):
+    if not os.path.exists(folder):
+        return
+    image_path = getRandomImagePath(folder)
+    if image_path is None:
+        return
+    try:
+        Himage = Image.open(image_path)
+        if device == Device.WS7in or device == DEVICES[-1]:
+            try:
+                from waveshare_epd import epd7in3f
+                print("epd7in3f Demo")
+                epd = epd7in3f.EPD()
+                print("init and Clear")
+                epd.init()
+                epd.Clear()
+                # Drawing on the image
+                print("1.Drawing on the image...")
+                epd.display(epd.getbuffer(Himage))
+                print("Goto Sleep...")
+                epd.sleep()
+            except KeyboardInterrupt:
+                print("ctrl + c:")
+                epd7in3f.epdconfig.module_exit()
+            exit(0)
+        elif device == Device.Inky or device == DEVICES[-1]:
+            try:
+                from inky.auto import InkyUC8159  # noqa: F401
+
+                inky = InkyUC8159(resolution=(600, 448))
+                inky.set_image(Himage)
+                inky.show()
+                exit(0)
+            except Exception as e:
+                raise (e)
+    except IOError as e:
+        print(e)
 
 def main():
     parser = argparse.ArgumentParser(
@@ -157,6 +210,10 @@ def main():
                           actionLock=replugLock,  changed=wifiFiles, largeFileLock=largeFileLock)
     blHandler.start()
     print("Initializing file system!")
+    timer = threading.Timer(60.0, updateRandomImage, args=(args.device, "output"))
+    timer.start()
+    print("Initialized updating random Image!")
+    
     # TODO: handle files modified from usb side
     time.sleep(args.timeout/2)
     print("Started Watching!")

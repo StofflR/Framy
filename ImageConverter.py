@@ -1,7 +1,6 @@
-import hitherdither
 from PIL import Image
 import subprocess
-import numpy
+import os
 
 class Device:
     WS7in = "WS7in"
@@ -58,7 +57,15 @@ class Converter:
     def convert(self):
         Image.open(self.image).resize(self.resolution).save("converted.png", "PNG")
         subprocess.run(["./dither", "converted.png", "dithered.png"])
-        return Image.open("dithered.png")
+        # save dithered image in separate folder
+        # create folder if it doesn't exist
+        os.makedirs("output", exist_ok=True)
+        #get random file name not in folder
+        i = 0
+        while os.path.exists(f"output/dithered_{i}.png"):
+            i += 1
+        os.rename("dithered.png", f"output/dithered_{i}.png")
+        return Image.open(f"output/dithered_{i}.png")
         #return Image.fromarray(numpy.array(Image.open("dithered.png"))[:,:,::-1])
 
 

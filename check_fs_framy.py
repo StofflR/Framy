@@ -97,7 +97,6 @@ def updateImage(device, saturation, image_path):
             except KeyboardInterrupt:
                 print("ctrl + c:")
                 epd7in3f.epdconfig.module_exit()
-            exit(0)
         elif device == Device.Inky or device == DEVICES[-1]:
             try:
                 from inky.auto import InkyUC8159  # noqa: F401
@@ -108,11 +107,11 @@ def updateImage(device, saturation, image_path):
                 ).convert()
                 inky.set_image(Himage)
                 inky.show()
-                exit(0)
             except Exception as e:
                 raise (e)
     except IOError as e:
         print(e)
+    print("Image update complete.")
 
 def updateRandomImage(device, folder):
     print("Updating random image...")
@@ -142,19 +141,17 @@ def updateRandomImage(device, folder):
             except KeyboardInterrupt:
                 print("ctrl + c:")
                 epd7in3f.epdconfig.module_exit()
-            exit(0)
         elif device == Device.Inky or device == DEVICES[-1]:
             try:
                 from inky.auto import InkyUC8159  # noqa: F401
-
                 inky = InkyUC8159(resolution=(600, 448))
                 inky.set_image(Himage)
                 inky.show()
-                exit(0)
             except Exception as e:
                 raise (e)
     except IOError as e:
         print(e)
+    print("Random image update complete.")
 
 def wait_for_file_complete(file_path, stable_time=7, timer=None):
     """

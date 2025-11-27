@@ -164,7 +164,7 @@ if subprocess.run(["dpkg", "-s", "libopenobex2"], capture_output=True).returncod
     remove(f"{OBEX_FILE}")
 
 subprocess.run(["apt-get", "install", "--fix-broken", "-y"])
-subprocess.run([PYTHON, "-m" ,"pip", "install", "watchdog", "dbus-python", "PyGObject", "RPi.GPIO", "spidev", "inky"])
+subprocess.run([PYTHON, "-m" ,"pip", "install", "-r", "requirements.txt"])
 
 makedirs(MOUNT_FILE, mode=0o2777, exist_ok=True)
 run_command([["mount", DATA_FILE, MOUNT_FILE]], "Mounting USB Storage to shared folder")

@@ -144,7 +144,7 @@ def updateRandomImage(device, folder):
         elif device == Device.Inky or device == DEVICES[-1]:
             try:
                 from inky.auto import InkyUC8159  # noqa: F401
-                inky = InkyUC8159(resolution=(600, 448))
+                inky = InkyUC8159(resolution=(640, 400))
                 inky.set_image(Himage)
                 inky.show()
             except Exception as e:
@@ -153,7 +153,7 @@ def updateRandomImage(device, folder):
         print(e)
     print("Random image update complete.")
 
-def wait_for_file_complete(file_path, stable_time=7, timer=None):
+def wait_for_file_complete(file_path, stable_time=60, timer=None):
     """
     Wait until the file size remains stable for stable_time seconds
     to ensure the transfer is complete

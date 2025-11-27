@@ -102,7 +102,7 @@ def updateImage(device, saturation, image_path):
             try:
                 from inky.auto import InkyUC8159  # noqa: F401
 
-                inky = InkyUC8159(resolution=(600, 448))
+                inky = InkyUC8159(resolution=(640, 400))
                 Himage = Converter(
                     inky.width, inky.height, image_path, saturation, Device.Inky
                 ).convert()
@@ -156,13 +156,17 @@ def updateRandomImage(device, folder):
     except IOError as e:
         print(e)
 
-def wait_for_file_complete(file_path, stable_time=2):
+def wait_for_file_complete(file_path, stable_time=2, timer=None):
     """
     Wait until the file size remains stable for stable_time seconds
     to ensure the transfer is complete
     """
     if not os.path.exists(file_path):
         return False
+    
+    # Pause the timer if provided
+    if timer is not None:
+        timer.cancel()
     
     previous_size = -1
     stable_duration = 0
@@ -185,12 +189,13 @@ def wait_for_file_complete(file_path, stable_time=2):
 class ImageFileHandler(FileSystemEventHandler):
     """Handles file system events for new image files"""
     
-    def __init__(self, device, saturation, bluetooth_folder, wifi_folder):
+    def __init__(self, device, saturation, bluetooth_folder, wifi_folder, timer=None):
         self.device = device
         self.saturation = saturation
         self.bluetooth_folder = bluetooth_folder
         self.wifi_folder = wifi_folder
         self.valid_extensions = ('jpg', 'jpeg', 'png')
+        self.timer = timer
     
     def on_created(self, event):
         if event.is_directory:
@@ -204,7 +209,7 @@ class ImageFileHandler(FileSystemEventHandler):
             
             # Wait for file transfer to complete
             print("Waiting for file transfer to complete...")
-            if wait_for_file_complete(file_path):
+            if wait_for_file_complete(file_path, timer=self.timer):
                 print("File transfer complete. Updating image...")
                 
                 # Add time to file name to avoid caching issues
@@ -272,8 +277,12 @@ def main():
     print("Bluetooth source: ", args.bluetooth, "\nWifi source: ",
                  args.wifi, "\nTimeout: ", args.timeout)
 
+    # Start timer for random image update
+    timer = threading.Timer(60.0, updateRandomImage, args=(args.device, "output"))
+    timer.start()
+
     # Create event handler and observer
-    event_handler = ImageFileHandler(args.device, args.saturation, args.bluetooth, args.wifi)
+    event_handler = ImageFileHandler(args.device, args.saturation, args.bluetooth, args.wifi, timer)
     observer = Observer()
     print(" Device: ", "Inky" if args.device == Device.Inky else "WS7in", "\nSaturation: ", args.saturation)
     # Watch both bluetooth and wifi folders
@@ -290,10 +299,6 @@ def main():
         print(f"Wifi folder does not exist: {args.wifi}")
     
     observer.start()
-    
-    # Start timer for random image update
-    timer = threading.Timer(60.0, updateRandomImage, args=(args.device, "output"))
-    timer.start()
    
     try:
         # Keep the program running

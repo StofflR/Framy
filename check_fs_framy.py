@@ -71,10 +71,11 @@ def getRandomImagePath(dir_path, valid_extensions=('jpg', 'jpeg', 'png')):
 
     return random.choice(valid_files)
 
-def updateImage(device, saturation, folder):
-    image_path = getImagePath(folder)
+def updateImage(device, saturation, image_path):
     if image_path is None:
+        print("No image found to update")
         return
+    print(f"Updating image: {image_path}")
     try:
         if device == Device.WS7in or device == DEVICES[-1]:
             try:
@@ -211,7 +212,7 @@ class ImageFileHandler(FileSystemEventHandler):
                     return
                 
                 # Update the image
-                updateImage(self.device, self.saturation, folder)
+                updateImage(self.device, self.saturation, file_path)
                 
                 # Restart the program
                 print("Restarting program...")

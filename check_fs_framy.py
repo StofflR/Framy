@@ -113,7 +113,7 @@ def updateImage(device, saturation, image_path):
         print(e)
     print("Image update complete.")
 
-def updateRandomImage(device, folder):
+def updateRandomImage(device, folder, timer_callback=None):
     print("Updating random image...")
     if not os.path.exists(folder):
         print(f"Folder does not exist: {folder}")
@@ -152,6 +152,10 @@ def updateRandomImage(device, folder):
     except IOError as e:
         print(e)
     print("Random image update complete.")
+    
+    # Restart the timer if callback provided
+    if timer_callback is not None:
+        timer_callback()
 
 def wait_for_file_complete(file_path, stable_time=60, timer=None):
     """
@@ -274,9 +278,18 @@ def main():
     print("Bluetooth source: ", args.bluetooth, "\nWifi source: ",
                  args.wifi, "\nTimeout: ", args.timeout)
 
-    # Start timer for random image update
-    timer = threading.Timer(60.0, updateRandomImage, args=(args.device, "output"))
-    timer.start()
+    # Create a function to start the timer
+    timer = None
+    def start_timer():
+        nonlocal timer
+        print("Starting timer for random image update...")
+        if timer is not None:
+            timer.cancel()
+        timer = threading.Timer(60.0, updateRandomImage, args=(args.device, "output", start_timer))
+        timer.start()
+    
+    # Start the initial timer
+    start_timer()
 
     # Create event handler and observer
     event_handler = ImageFileHandler(args.device, args.saturation, args.bluetooth, args.wifi, timer)

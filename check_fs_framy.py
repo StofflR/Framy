@@ -275,7 +275,7 @@ def main():
     # Create event handler and observer
     event_handler = ImageFileHandler(args.device, args.saturation, args.bluetooth, args.wifi)
     observer = Observer()
-    
+    print(" Device: ", "Inky" if args.device == Device.Inky else "WS7in", "\nSaturation: ", args.saturation)
     # Watch both bluetooth and wifi folders
     if os.path.exists(args.bluetooth):
         observer.schedule(event_handler, args.bluetooth, recursive=False)

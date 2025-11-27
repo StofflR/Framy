@@ -203,13 +203,12 @@ class ImageFileHandler(FileSystemEventHandler):
             if wait_for_file_complete(file_path):
                 print("File transfer complete. Updating image...")
                 
-                # Determine which folder the file is in
-                if file_path.startswith(self.bluetooth_folder):
-                    folder = self.bluetooth_folder
-                elif file_path.startswith(self.wifi_folder):
-                    folder = self.wifi_folder
-                else:
-                    return
+                # Add time to file name to avoid caching issues
+                base, ext = os.path.splitext(file_path)
+                timestamp = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
+                new_file_path = f"{base}_{timestamp}{ext}"
+                os.rename(file_path, new_file_path)
+                file_path = new_file_path
                 
                 # Update the image
                 updateImage(self.device, self.saturation, file_path)
